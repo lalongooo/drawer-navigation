@@ -3,22 +3,22 @@ package lalongooo.com.myapplication;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
+import android.view.View;
 
 import com.mikepenz.materialdrawer.Drawer;
 import com.mikepenz.materialdrawer.DrawerBuilder;
-import com.mikepenz.materialdrawer.model.DividerDrawerItem;
 import com.mikepenz.materialdrawer.model.PrimaryDrawerItem;
 import com.mikepenz.materialdrawer.model.SecondaryDrawerItem;
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem;
 
-public class MainActivity extends AppCompatActivity implements FragmentTwo.ShowDetail {
+public class MainActivity extends AppCompatActivity implements FragmentTwo.ShowDetail, FragmentManager.OnBackStackChangedListener {
 
 
     private Drawer drawer;
@@ -27,6 +27,7 @@ public class MainActivity extends AppCompatActivity implements FragmentTwo.ShowD
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        getSupportFragmentManager().addOnBackStackChangedListener(this);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -63,10 +64,29 @@ public class MainActivity extends AppCompatActivity implements FragmentTwo.ShowD
                     public boolean onItemClick(View view, int position, IDrawerItem drawerItem) {
                         switch (drawerItem.getIdentifier()) {
                             case 1:
-                                getSupportFragmentManager().beginTransaction().replace(R.id.fragmentContainer, new FragmentOne()).commit();
+
+                                if(!(getSupportFragmentManager().findFragmentById(R.id.fragmentContainer) instanceof FragmentOne)){
+
+                                    getSupportFragmentManager()
+                                            .popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+
+                                    getSupportFragmentManager()
+                                            .beginTransaction()
+                                            .replace(R.id.fragmentContainer, new FragmentOne())
+                                            .commit();
+                                }
+
                                 break;
                             case 2:
-                                getSupportFragmentManager().beginTransaction().replace(R.id.fragmentContainer, new FragmentTwo()).addToBackStack(null).commit();
+                                if(!(getSupportFragmentManager().findFragmentById(R.id.fragmentContainer) instanceof FragmentTwo)) {
+
+                                    getSupportFragmentManager()
+                                            .beginTransaction()
+                                            .hide(getSupportFragmentManager().findFragmentById(R.id.fragmentContainer))
+                                            .add(R.id.fragmentContainer, new FragmentTwo())
+                                            .addToBackStack(null)
+                                            .commit();
+                                }
                                 break;
                         }
                         return false;
@@ -109,14 +129,23 @@ public class MainActivity extends AppCompatActivity implements FragmentTwo.ShowD
 
     @Override
     public void showDetails() {
-        drawer.getActionBarDrawerToggle().setDrawerIndicatorEnabled(false);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-        //get the DrawerLayout from the Drawer
-        DrawerLayout drawerLayout = drawer.getDrawerLayout();
-        //do whatever you want with the Drawer. Like locking it.
-        drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_CLOSED);
+        getSupportFragmentManager()
+                .beginTransaction()
+                .hide(getSupportFragmentManager().findFragmentById(R.id.fragmentContainer))
+                .add(R.id.fragmentContainer, new FragmentThree())
+                .addToBackStack(null)
+                .commit();
+    }
 
-        getSupportFragmentManager().beginTransaction().replace(R.id.fragmentContainer, new FragmentThree()).addToBackStack(null).commit();
+    @Override
+    public void onBackStackChanged() {
+        Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.fragmentContainer);
+
+        if(fragment instanceof FragmentOne){
+            drawer.setSelection(1);
+        }else if(fragment instanceof FragmentTwo){
+            drawer.setSelection(2);
+        }
     }
 }
